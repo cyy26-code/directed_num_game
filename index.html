@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有向數魔法師 - 完整五級大冒險</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        magic: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                        },
+                        spark: '#fbbf24',
+                        correct: '#10b981',
+                        wrong: '#ef4444'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                        math: ['Fredoka', 'cursive', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #090d16 0%, #111827 40%, #1e1b4b 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .rule-card {
+            transition: all 0.3s ease;
+        }
+
+        .rule-card.active-rule {
+            transform: scale(1.05);
+            border-color: #fbbf24;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+            background: rgba(251, 191, 36, 0.15);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(1deg); }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .math-font {
+            font-family: 'Fredoka', cursive, sans-serif;
+        }
+
+        /* Certificate Modal styling */
+        #cert-canvas {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between p-3 sm:p-6 overflow-x-hidden">
+
+    <!-- Navigation / Top Stats Bar -->
+    <header class="max-w-5xl mx-auto w-full glass-panel rounded-2xl p-4 mb-4 shadow-2xl flex flex-wrap justify-between items-center gap-4 relative z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg animate-float">
+                🧙‍♂️
+            </div>
+            <div>
+                <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-purple-300 to-indigo-300">
+                    有向數魔法師
+                </h1>
+                <p class="text-xs text-indigo-200">中一數學 • 五級通關挑戰</p>
+            </div>
+        </div>
+
+        <!-- Level selector badges -->
+        <div class="flex items-center gap-1 sm:gap-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-700/60 overflow-x-auto">
+            <button id="lvl-btn-1" onclick="switchLevel(1)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow">程度一</button>
+            <button id="lvl-btn-2" onclick="switchLevel(2)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all text-gray-500 cursor-not-allowed opacity-50" disabled><i class="fa-solid fa-lock text-[10px] mr-1"></i>二</button>
+            <button id="lvl-btn-3" onclick="switchLevel(3)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all text-gray-500 cursor-not-allowed opacity-50" disabled><i class="fa-solid fa-lock text-[10px] mr-1"></i>三</button>
+            <button id="lvl-btn-4" onclick="switchLevel(4)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all text-gray-500 cursor-not-allowed opacity-50" disabled><i class="fa-solid fa-lock text-[10px] mr-1"></i>四</button>
+            <button id="lvl-btn-5" onclick="switchLevel(5)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all text-gray-500 cursor-not-allowed opacity-50" disabled><i class="fa-solid fa-lock text-[10px] mr-1"></i>五</button>
+        </div>
+
+        <!-- Score & Combo Indicators -->
+        <div class="flex items-center gap-4">
+            <div class="text-center">
+                <span class="text-[10px] text-gray-400 block font-semibold">分數</span>
+                <span id="score-display" class="text-xl font-black text-amber-400 math-font">0</span>
+            </div>
+            <div class="text-center">
+                <span class="text-[10px] text-gray-400 block font-semibold">連勝</span>
+                <div class="flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
+                    <span id="streak-display" class="text-xl font-black text-amber-400 math-font">0</span>
+                </div>
+            </div>
+            <button id="sound-btn" onclick="toggleSound()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 transition-all border border-slate-700">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto w-full flex-1 flex flex-col justify-center items-center my-2 relative z-10">
+        
+        <!-- Mastery Level Progress Bar -->
+        <div class="w-full glass-panel rounded-xl p-3 mb-4 shadow-lg">
+            <div class="flex justify-between items-center text-xs sm:text-sm font-semibold mb-1.5">
+                <span id="level-title-display" class="text-amber-300 flex items-center gap-2 font-bold">
+                    <i class="fa-solid fa-crown text-amber-400"></i>
+                    程度一：正負號化簡（需連續答對 5 題解鎖下一關）
+                </span>
+                <span id="progress-text" class="text-amber-300 font-bold math-font">0 / 5</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-700/50">
+                <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-amber-400 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Dynamic Rule Quick Reference Box -->
+        <div class="w-full mb-4">
+            <div class="flex justify-between items-center mb-1.5">
+                <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-bookmark text-amber-400"></i>
+                    <span id="rule-box-title">程度一：正負號化簡密技</span>
+                </span>
+                <span class="text-[11px] text-gray-400">同號得正 • 異號得負</span>
+            </div>
+            <!-- Rule Cards Grid (Populated dynamically) -->
+            <div id="rules-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Main Question Card -->
+        <div id="question-card" class="w-full glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden transition-all border border-indigo-500/30 min-h-[320px] flex flex-col justify-center items-center">
+            
+            <div id="level-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 mb-2">
+                程度一 • 題目
+            </div>
+
+            <!-- Question Display -->
+            <div id="question-text" class="text-3xl sm:text-5xl font-black tracking-wide my-4 math-font text-white drop-shadow-md">
+                +(+5)
+            </div>
+
+            <p id="instruction-text" class="text-xs sm:text-sm text-gray-300 mb-6">
+                請選擇化簡後的正確結果：
+            </p>
+
+            <!-- Choice Options Grid -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full max-w-xl mx-auto">
+                <!-- Dynamic Option Buttons -->
+            </div>
+
+            <!-- Explanation Feedback Area -->
+            <div id="feedback-area" class="hidden w-full max-w-xl mt-6 p-4 rounded-2xl text-center animate-pop">
+                <div id="feedback-title" class="font-bold text-base sm:text-lg mb-1"></div>
+                <div id="feedback-desc" class="text-xs sm:text-sm text-gray-200"></div>
+                <button id="next-btn" onclick="generateQuestion()" class="mt-4 px-6 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 font-black text-slate-950 text-sm shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                    下一題 <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Level Up Modal -->
+    <div id="levelup-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 text-center border-2 border-amber-400/50 shadow-2xl animate-pop">
+            <div class="text-5xl mb-3 animate-bounce">🎉</div>
+            <h2 id="levelup-title" class="text-2xl font-black text-amber-300 mb-2">晉級成功！</h2>
+            <p id="levelup-desc" class="text-gray-200 text-sm mb-6 leading-relaxed">
+                你已順利通關！準備好迎接更高難度的有向數魔法挑戰了嗎？
+            </p>
+            <button id="levelup-next-btn" onclick="proceedNextLevel()" class="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 font-extrabold text-slate-950 text-sm shadow-xl transition-all transform hover:scale-105 active:scale-95">
+                解鎖下一關 <i class="fa-solid fa-lock-open ml-1"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Final Game Victory Modal (Student Info Form) -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 text-center border-2 border-amber-400/60 shadow-2xl animate-pop relative max-h-[90vh] overflow-y-auto">
+            <div class="text-6xl mb-2 animate-bounce">🏆</div>
+            <h2 class="text-2xl sm:text-3xl font-black text-amber-300 mb-1">恭喜通關！有向數大師！</h2>
+            <p class="text-gray-300 text-xs sm:text-sm mb-4">
+                你已經徹底完全精通了中一有向數的所有拆括號與四則運算規則！
+            </p>
+
+            <!-- Student details form -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 mb-5 border border-slate-700/70 text-left space-y-3">
+                <p class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2">請輸入學生資料以獲取榮譽證書：</p>
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1 font-semibold">班別 (Class)</label>
+                    <input type="text" id="student-class" placeholder="例：1A" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1 font-semibold">學生姓名 (Name)</label>
+                    <input type="text" id="student-name" placeholder="例：陳大文" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1 font-semibold">學號 (Class No.)</label>
+                    <input type="text" id="student-no" placeholder="例：05" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                </div>
+            </div>
+
+            <button onclick="generateCertificate()" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 hover:brightness-110 font-black text-slate-950 text-base shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-award"></i>
+                <span>即時生成榮譽證書</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Certificate Display Modal -->
+    <div id="cert-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden overflow-y-auto">
+        <div class="glass-panel max-w-2xl w-full rounded-3xl p-4 sm:p-6 text-center border border-amber-400/40 shadow-2xl my-auto">
+            <h3 class="text-xl font-bold text-amber-300 mb-3">榮譽證書預覽</h3>
+            
+            <div class="flex justify-center mb-4 overflow-hidden rounded-xl border border-slate-700">
+                <canvas id="cert-canvas" width="800" height="560"></canvas>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3">
+                <button onclick="downloadCert()" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i> 下載證書圖片
+                </button>
+                <button onclick="printCert()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> 列印證書
+                </button>
+                <button onclick="closeCertModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-sm">
+                    返回遊戲
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="max-w-5xl mx-auto w-full text-center text-xs text-gray-500 py-3">
+        香港中一數學科 • 有向數（Directed Numbers）互動學習遊戲
+    </footer>
+
+    <script>
+        // --- Game State Variables ---
+        let currentLevel = 1;
+        let unlockedLevels = [1]; // Levels unlocked so far
+        let score = 0;
+        let levelStreaks = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        let currentQuestion = null;
+        let isAnswered = false;
+        let soundEnabled = true;
+        const TARGET_STREAK = 5;
+
+        // Level Details Configuration
+        const levelConfig = {
+            1: {
+                title: "程度一：單項正負號化簡",
+                instruction: "請運用口訣，選擇化簡後的正確數值：",
+                rulesCount: 4,
+                needCalc: false
+            },
+            2: {
+                title: "程度二：雙項拆括號（只需拆括號，不需計算結果）",
+                instruction: "請運用拆括號口訣，選擇正確的拆括號表達式：",
+                rulesCount: 4,
+                needCalc: false
+            },
+            3: {
+                title: "程度三：雙項拆括號 + 求最終答案",
+                instruction: "請先進行拆括號，並算出最終答案：",
+                rulesCount: 4,
+                needCalc: true
+            },
+            4: {
+                title: "程度四：含負號首項拆括號（不需計算結果）",
+                instruction: "括號內首項為負數，請選擇正確的拆括號表達式：",
+                rulesCount: 8,
+                needCalc: false
+            },
+            5: {
+                title: "程度五：進階拆括號 + 終極計算大挑戰",
+                instruction: "請拆開括號，並計算出最終正確的數字答案：",
+                rulesCount: 8,
+                needCalc: true
+            }
+        };
+
+        // Level 1 Pure Base Rules
+        const level1RulesDB = [
+            { id: 'l1-1', text: "+(+a) = +a", tag: "同號得正", isPositive: true },
+            { id: 'l1-2', text: "-(+a) = -a", tag: "異號得負", isPositive: false },
+            { id: 'l1-3', text: "+(-a) = -a", tag: "異號得負", isPositive: false },
+            { id: 'l1-4', text: "-(-a) = +a", tag: "同號得正", isPositive: true }
+        ];
+
+        // Levels 2-5 Rules Database
+        const rulesDB = [
+            // Standard 4 rules
+            { id: 1, text: "+(a+b) = +a+b", outer: '+', innerA: '+', innerB: '+', desc: '正號在括號外：保持原號' },
+            { id: 2, text: "+(a-b) = +a-b", outer: '+', innerA: '+', innerB: '-', desc: '正號在括號外：保持原號' },
+            { id: 3, text: "-(a+b) = -a-b", outer: '-', innerA: '+', innerB: '+', desc: '負號在括號外：括號內全部變號' },
+            { id: 4, text: "-(a-b) = -a+b", outer: '-', innerA: '+', innerB: '-', desc: '負號在括號外：括號內全部變號' },
+            
+            // Advanced 4 rules (Negative first term)
+            { id: 5, text: "+(-a+b) = -a+b", outer: '+', innerA: '-', innerB: '+', desc: '正號在括號外：保持原號' },
+            { id: 6, text: "+(-a-b) = -a-b", outer: '+', innerA: '-', innerB: '-', desc: '正號在括號外：保持原號' },
+            { id: 7, text: "-(-a+b) = +a-b", outer: '-', innerA: '-', innerB: '+', desc: '負號在括號外：括號內全部變號' },
+            { id: 8, text: "-(-a-b) = +a+b", outer: '-', innerA: '-', innerB: '-', desc: '負號在括號外：括號內全部變號' }
+        ];
+
+        // --- Web Audio API Synthesizer ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(130.81, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'levelup') {
+                    const now = audioCtx.currentTime;
+                    [440, 554.37, 659.25, 880].forEach((freq, i) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.frequency.setValueAtTime(freq, now + i * 0.08);
+                        noteGain.gain.setValueAtTime(0.2, now + i * 0.08);
+                        noteGain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.25);
+                        noteOsc.start(now + i * 0.08);
+                        noteOsc.stop(now + i * 0.08 + 0.25);
+                    });
+                }
+            } catch (e) { console.log(e); }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-gray-500 text-sm';
+        }
+
+        function renderRulesBox() {
+            const grid = document.getElementById('rules-grid');
+            grid.innerHTML = '';
+
+            if (currentLevel === 1) {
+                // 程度一專用基本 4 條提示
+                document.getElementById('rule-box-title').innerText = "程度一：基礎正負號化簡口訣";
+                level1RulesDB.forEach(r => {
+                    const card = document.createElement('div');
+                    card.id = `rule-card-${r.id}`;
+                    card.className = "rule-card glass-panel rounded-xl p-2.5 text-center border border-indigo-500/20";
+                    const tagColor = r.isPositive ? "text-emerald-400" : "text-rose-400";
+                    card.innerHTML = `
+                        <div class="text-[10px] ${tagColor} font-bold">${r.tag}</div>
+                        <div class="math-font font-bold text-xs sm:text-sm text-white my-0.5">${r.text}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                // 程度二至五的提示
+                const maxRules = levelConfig[currentLevel].rulesCount;
+                document.getElementById('rule-box-title').innerText = currentLevel <= 3 ? "提示口訣（雙項基礎 4 條）" : "提示口訣（雙項進階 8 條）";
+
+                for (let i = 0; i < maxRules; i++) {
+                    const r = rulesDB[i];
+                    const card = document.createElement('div');
+                    card.id = `rule-card-${r.id}`;
+                    card.className = "rule-card glass-panel rounded-xl p-2.5 text-center border border-indigo-500/20";
+                    
+                    const isNegativeOuter = r.outer === '-';
+                    const tagColor = isNegativeOuter ? "text-rose-400" : "text-emerald-400";
+                    
+                    card.innerHTML = `
+                        <div class="text-[10px] ${tagColor} font-bold">${isNegativeOuter ? '負號在外:變號' : '正號在外:保持'}</div>
+                        <div class="math-font font-bold text-xs sm:text-sm text-white my-0.5">${r.text}</div>
+                    `;
+                    grid.appendChild(card);
+                }
+            }
+        }
+
+        function switchLevel(lvl) {
+            if (!unlockedLevels.includes(lvl)) return;
+            currentLevel = lvl;
+            
+            // Update Level buttons state
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`lvl-btn-${i}`);
+                if (unlockedLevels.includes(i)) {
+                    btn.disabled = false;
+                    btn.classList.remove('text-gray-500', 'cursor-not-allowed', 'opacity-50');
+                    if (i === currentLevel) {
+                        btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-amber-400 text-slate-950 shadow-md";
+                    } else {
+                        btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-slate-800 text-indigo-200 hover:bg-slate-700";
+                    }
+                }
+            }
+
+            // Update Level Header & Title
+            const cfg = levelConfig[currentLevel];
+            document.getElementById('level-title-display').innerHTML = `<i class="fa-solid fa-crown text-amber-400"></i> ${cfg.title}`;
+            document.getElementById('instruction-text').innerText = cfg.instruction;
+            document.getElementById('level-badge').innerText = `程度 ${currentLevel} • 題目`;
+
+            // Update Progress Bar for this level
+            updateProgress();
+            
+            // Re-render rules box
+            renderRulesBox();
+
+            // Generate question
+            generateQuestion();
+        }
+
+        function updateProgress() {
+            const streak = levelStreaks[currentLevel] || 0;
+            const pct = Math.min((streak / TARGET_STREAK) * 100, 100);
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-text').innerText = `${Math.min(streak, TARGET_STREAK)} / ${TARGET_STREAK}`;
+            document.getElementById('streak-display').innerText = streak;
+            document.getElementById('score-display').innerText = score;
+        }
+
+        function generateQuestion() {
+            isAnswered = false;
+            document.getElementById('feedback-area').classList.add('hidden');
+            document.querySelectorAll('.rule-card').forEach(c => c.classList.remove('active-rule'));
+
+            const a = Math.floor(Math.random() * 8) + 2; // Number 2 to 9
+            const b = Math.floor(Math.random() * 8) + 2; // Number 2 to 9
+
+            let rule;
+            if (currentLevel === 1) {
+                // Single sign reduction (與 basic 4 rules 對應)
+                const lvl1Rules = [
+                    { id: 'l1-1', q: `+(+${a})`, ansStr: `+${a}`, val: a, text: `+(+a) = +a (同號得正)` },
+                    { id: 'l1-2', q: `-(+${a})`, ansStr: `-${a}`, val: -a, text: `-(+a) = -a (異號得負)` },
+                    { id: 'l1-3', q: `+(-${a})`, ansStr: `-${a}`, val: -a, text: `+(-a) = -a (異號得負)` },
+                    { id: 'l1-4', q: `-(-${a})`, ansStr: `+${a}`, val: a, text: `-(-a) = +a (同號得正)` }
+                ];
+                const item = lvl1Rules[Math.floor(Math.random() * lvl1Rules.length)];
+                
+                currentQuestion = {
+                    displayQ: item.q,
+                    correctAnsStr: item.ansStr,
+                    correctVal: item.val,
+                    ruleId: item.id,
+                    ruleText: item.text,
+                    options: createOptionsLevel1(item.val, item.ansStr)
+                };
+
+            } else {
+                // Levels 2 to 5 (Two terms expansion)
+                const maxRuleIdx = levelConfig[currentLevel].rulesCount;
+                const availableRules = rulesDB.slice(0, maxRuleIdx);
+                rule = availableRules[Math.floor(Math.random() * availableRules.length)];
+
+                const signA = rule.innerA === '-' ? '-' : '';
+                const signB = rule.innerB === '-' ? '-' : '+';
+                const bracketContent = `${signA}${a} ${signB} ${b}`;
+                const questionExpr = `${rule.outer}(${bracketContent})`;
+
+                const expandedSignA = (rule.outer === '+') ? rule.innerA : (rule.innerA === '+' ? '-' : '+');
+                const expandedSignB = (rule.outer === '+') ? rule.innerB : (rule.innerB === '+' ? '-' : '+');
+
+                const expandedStr = `${expandedSignA}${a} ${expandedSignB}${b}`;
+                
+                const valA = expandedSignA === '+' ? a : -a;
+                const valB = expandedSignB === '+' ? b : -b;
+                const finalNumericAns = valA + valB;
+
+                const needCalc = levelConfig[currentLevel].needCalc;
+
+                currentQuestion = {
+                    displayQ: questionExpr,
+                    correctAnsStr: needCalc ? `${expandedStr} = ${finalNumericAns}` : expandedStr,
+                    expandedStr: expandedStr,
+                    finalVal: finalNumericAns,
+                    ruleId: rule.id,
+                    ruleObj: rule,
+                    options: createOptionsBracket(a, b, expandedSignA, expandedSignB, finalNumericAns, needCalc)
+                };
+            }
+
+            // Display question
+            document.getElementById('question-text').innerText = currentQuestion.displayQ;
+
+            // Render Options
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+            currentQuestion.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn font-black text-lg sm:text-xl py-3.5 px-4 rounded-2xl glass-panel border-2 border-indigo-500/30 hover:border-amber-400 hover:bg-amber-400/10 text-white transition-all transform hover:scale-102 active:scale-95 math-font`;
+                btn.innerText = opt.text;
+                btn.onclick = () => checkAnswer(opt, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function createOptionsLevel1(val, correctStr) {
+            const opts = [{ text: correctStr, isCorrect: true }];
+            const wrongVal = -val;
+            const wrongStr = wrongVal > 0 ? `+${wrongVal}` : `${wrongVal}`;
+            opts.push({ text: wrongStr, isCorrect: false });
+            
+            const off = Math.abs(val) + 1;
+            opts.push({ text: `+${off}`, isCorrect: false });
+            opts.push({ text: `-${off}`, isCorrect: false });
+            
+            return shuffle(opts);
+        }
+
+        function createOptionsBracket(a, b, signA, signB, finalVal, needCalc) {
+            const opts = [];
+            
+            const correctText = needCalc ? `${signA}${a} ${signB}${b} = ${finalVal}` : `${signA}${a} ${signB}${b}`;
+            opts.push({ text: correctText, isCorrect: true });
+
+            const oppSignB = signB === '+' ? '-' : '+';
+            const valA = signA === '+' ? a : -a;
+            const wrongVal1 = valA + (oppSignB === '+' ? b : -b);
+            const text1 = needCalc ? `${signA}${a} ${oppSignB}${b} = ${wrongVal1}` : `${signA}${a} ${oppSignB}${b}`;
+            opts.push({ text: text1, isCorrect: false });
+
+            const oppSignA = signA === '+' ? '-' : '+';
+            const wrongVal2 = (oppSignA === '+' ? a : -a) + (signB === '+' ? b : -b);
+            const text2 = needCalc ? `${oppSignA}${a} ${signB}${b} = ${wrongVal2}` : `${oppSignA}${a} ${signB}${b}`;
+            opts.push({ text: text2, isCorrect: false });
+
+            const wrongVal3 = needCalc ? finalVal + (Math.random() > 0.5 ? 2 : -2) : null;
+            const text3 = needCalc ? `${signA}${a} ${signB}${b} = ${wrongVal3}` : `${oppSignA}${a} ${oppSignB}${b}`;
+            opts.push({ text: text3, isCorrect: false });
+
+            return shuffle(opts);
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function checkAnswer(selectedOpt, btnElement) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const feedbackArea = document.getElementById('feedback-area');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackDesc = document.getElementById('feedback-desc');
+
+            // Highlight corresponding rule card
+            const ruleCard = document.getElementById(`rule-card-${currentQuestion.ruleId}`);
+            if (ruleCard) ruleCard.classList.add('active-rule');
+
+            // Disable all buttons
+            document.querySelectorAll('.option-btn').forEach(b => b.classList.add('pointer-events-none', 'opacity-60'));
+
+            if (selectedOpt.isCorrect) {
+                playSound('correct');
+                score += 100 + (levelStreaks[currentLevel] * 20);
+                levelStreaks[currentLevel]++;
+
+                btnElement.classList.remove('opacity-60', 'border-indigo-500/30');
+                btnElement.classList.add('bg-emerald-500/30', 'border-emerald-400', 'text-emerald-300');
+
+                feedbackArea.className = 'mt-6 p-4 rounded-2xl bg-emerald-950/70 border border-emerald-500/50 text-center animate-pop';
+                feedbackTitle.className = 'font-black text-lg text-emerald-400 flex items-center justify-center gap-2';
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-check"></i> 答對了！非常優秀！`;
+                
+                let ruleTextDisplay = "";
+                if (currentLevel === 1) {
+                    ruleTextDisplay = currentQuestion.ruleText;
+                } else {
+                    const ruleInfo = rulesDB.find(r => r.id === currentQuestion.ruleId);
+                    ruleTextDisplay = ruleInfo ? ruleInfo.text : '';
+                }
+
+                feedbackDesc.innerHTML = `運用口訣：<strong class="text-amber-300 math-font">${ruleTextDisplay}</strong><br>正確解答：<span class="font-bold text-emerald-300 math-font">${currentQuestion.correctAnsStr}</span>`;
+
+            } else {
+                playSound('wrong');
+                levelStreaks[currentLevel] = 0; // Reset streak
+
+                btnElement.classList.remove('opacity-60', 'border-indigo-500/30');
+                btnElement.classList.add('bg-rose-500/30', 'border-rose-400', 'text-rose-300');
+
+                document.getElementById('question-card').classList.add('animate-shake');
+                setTimeout(() => document.getElementById('question-card').classList.remove('animate-shake'), 400);
+
+                feedbackArea.className = 'mt-6 p-4 rounded-2xl bg-rose-950/70 border border-rose-500/50 text-center animate-pop';
+                feedbackTitle.className = 'font-black text-lg text-rose-400 flex items-center justify-center gap-2';
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 答錯了，再接再厲！`;
+                feedbackDesc.innerHTML = `正確答案為：<strong class="text-amber-300 math-font">${currentQuestion.correctAnsStr}</strong>`;
+            }
+
+            updateProgress();
+            feedbackArea.classList.remove('hidden');
+
+            // Check if level cleared (5 streaks)
+            if (levelStreaks[currentLevel] >= TARGET_STREAK) {
+                setTimeout(handleLevelClear, 800);
+            }
+        }
+
+        function handleLevelClear() {
+            playSound('levelup');
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+            if (currentLevel < 5) {
+                const nextLvl = currentLevel + 1;
+                if (!unlockedLevels.includes(nextLvl)) {
+                    unlockedLevels.push(nextLvl);
+                }
+                document.getElementById('levelup-title').innerText = `程度 ${currentLevel} 通關成功！`;
+                document.getElementById('levelup-desc').innerHTML = `你已連續答對 5 題！<br>成功解鎖 <strong class="text-amber-300">${levelConfig[nextLvl].title}</strong>！`;
+                document.getElementById('levelup-modal').classList.remove('hidden');
+            } else {
+                // Game completely cleared
+                document.getElementById('victory-modal').classList.remove('hidden');
+            }
+        }
+
+        function proceedNextLevel() {
+            document.getElementById('levelup-modal').classList.add('hidden');
+            switchLevel(currentLevel + 1);
+        }
+
+        function generateCertificate() {
+            const className = document.getElementById('student-class').value.trim() || "1A";
+            const studentName = document.getElementById('student-name').value.trim() || "同學";
+            const classNo = document.getElementById('student-no').value.trim() || "01";
+
+            const canvas = document.getElementById('cert-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const grad = ctx.createLinearGradient(0, 0, 800, 560);
+            grad.addColorStop(0, '#0f172a');
+            grad.addColorStop(0.5, '#1e1b4b');
+            grad.addColorStop(1, '#311042');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 800, 560);
+
+            // Gold Border
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(20, 20, 760, 520);
+
+            ctx.strokeStyle = '#6366f1';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(30, 30, 740, 500);
+
+            // Header Title
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = '900 34px "Noto Sans TC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🏆 榮 譽 證 書 🏆', 400, 90);
+
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '16px "Noto Sans TC", sans-serif';
+            ctx.fillText('CERTIFICATE OF MATHEMATICAL ACHIEVEMENT', 400, 120);
+
+            // Divider Line
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(250, 140);
+            ctx.lineTo(550, 140);
+            ctx.stroke();
+
+            // Certification Body Text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '20px "Noto Sans TC", sans-serif';
+            ctx.fillText('茲證明學生', 400, 190);
+
+            // Student Name & Details
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = '900 32px "Noto Sans TC", sans-serif';
+            ctx.fillText(`${className} 班  (${classNo}號)   ${studentName}`, 400, 245);
+
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '18px "Noto Sans TC", sans-serif';
+            ctx.fillText('已成功通過中一數學科「有向數」全數五個程度之挑戰', 400, 300);
+            ctx.fillText('熟練掌握拆括號法則、符號化簡與四則混和運算！', 400, 335);
+
+            // Score Badge
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.15)';
+            ctx.fillRect(280, 375, 240, 50);
+            ctx.strokeStyle = '#fbbf24';
+            ctx.strokeRect(280, 375, 240, 50);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 20px "Fredoka", sans-serif';
+            ctx.fillText(`總得分: ${score} 分`, 400, 407);
+
+            // Date & Seal
+            const today = new Date();
+            const dateStr = `${today.getFullYear()} 年 ${today.getMonth() + 1} 月 ${today.getDate()} 日`;
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '14px "Noto Sans TC", sans-serif';
+            ctx.fillText(`頒發日期：${dateStr}`, 220, 485);
+            ctx.fillText('頒發單位：有向數魔法教學團隊', 580, 485);
+
+            document.getElementById('victory-modal').classList.add('hidden');
+            document.getElementById('cert-modal').classList.remove('hidden');
+        }
+
+        function downloadCert() {
+            const canvas = document.getElementById('cert-canvas');
+            const link = document.createElement('a');
+            link.download = '有向數大師榮譽證書.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function printCert() {
+            const canvas = document.getElementById('cert-canvas');
+            const win = window.open('', '_blank');
+            win.document.write(`<img src="${canvas.toDataURL()}" style="width:100%; max-width:800px; display:block; margin:auto;" onload="window.print(); window.close();"/>`);
+        }
+
+        function closeCertModal() {
+            document.getElementById('cert-modal').classList.add('hidden');
+        }
+
+        // Initialize game on window load
+        window.onload = function() {
+            switchLevel(1);
+        };
+    </script>
+</body>
+</html>
